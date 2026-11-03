@@ -132,6 +132,14 @@ def step_hits(a, rep):
     return {'made': sorted(f for f in os.listdir(os.path.join(ASSETS, 'ripped')) if f.endswith('_hit.json'))}
 
 
+def step_ladder(a, rep):
+    import ladder
+    os.makedirs(os.path.join(ASSETS, 'ripped'), exist_ok=True)
+    b = open(os.path.join(FS, '1ST_READ.BIN'), 'rb').read()
+    json.dump(ladder.build(b), open(os.path.join(ASSETS, 'ripped', 'ladder.json'), 'w'), indent=1)
+    return {}
+
+
 def step_audio(a, rep):
     for exe in ('vgmstream-cli', 'ffmpeg'):
         if not shutil.which(exe):
@@ -171,8 +179,9 @@ def step_gap(name):
 
 
 STEPS = [
-    ('deps', step_deps), ('disc', step_disc), ('models', step_models), ('tables', step_tables), ('code_tables', step_code_tables), ('hits', step_hits),
-    ('audio', step_audio), ('faces', step_faces), ('items', step_items),
+    ('deps', step_deps), ('disc', step_disc), ('models', step_models), ('tables', step_tables),
+    ('code_tables', step_code_tables), ('hits', step_hits), ('ladder', step_ladder), ('audio', step_audio),
+    ('faces', step_faces), ('items', step_items),
     ('fighters', step_gap('fighters')), ('stages', step_gap('stages')), ('measured', step_gap('measured')),
     ('hd', step_gap('hd')),
 ]
