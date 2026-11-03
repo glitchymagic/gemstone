@@ -16,4 +16,7 @@ func _ready() -> void:
 			Game.cinematics = true
 			Game._set_screen(t)
 			return
+	if ImportScreen.needed():   # nothing from the disc is imported yet (scripts/import_screen.gd)
+		Game._set_screen(ImportScreen.new())
+		return
 	Game.goto_title()

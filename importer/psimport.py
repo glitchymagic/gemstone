@@ -45,6 +45,22 @@ def sha256(p):
 
 
 # ---------------------------------------------------------------- steps
+def step_deps(a, rep):
+    miss = []
+    for mod in ('numpy', 'PIL', 'torch', 'spandrel', 'scipy'):
+        # some Python builds lack _lzma; torchvision only imports it (tools/upscale.py has the same stand-in module)
+        shim = ('import sys, types\ntry:\n import lzma\nexcept ImportError:\n m = types.ModuleType("lzma"); '
+                'm.open = None; m.LZMAFile = None; m.LZMAError = Exception; sys.modules["lzma"] = m\n')
+        if subprocess.run([PY, '-c', shim + f'import {mod}'], capture_output=True).returncode != 0:
+            miss.append(mod)
+    tools = [t for t in ('vgmstream-cli', 'ffmpeg') if not shutil.which(t)]
+    if miss or tools:
+        raise RuntimeError('missing: ' + ', '.join(miss + tools) + f' (Python {sys.executable}). Run: '
+                           f'"{sys.executable}" -m pip install -r importer/requirements.txt'
+                           + ('; and put ffmpeg + vgmstream-cli on PATH' if tools else ''))
+    return {'python': sys.version.split()[0]}
+
+
 def step_disc(a, rep):
     known = json.load(open(os.path.join(HERE, 'known_files.json')))
     have = os.path.isdir(FS) and all(os.path.exists(os.path.join(FS, n)) for n in known['files'])
@@ -155,7 +171,7 @@ def step_gap(name):
 
 
 STEPS = [
-    ('disc', step_disc), ('models', step_models), ('tables', step_tables), ('code_tables', step_code_tables), ('hits', step_hits),
+    ('deps', step_deps), ('disc', step_disc), ('models', step_models), ('tables', step_tables), ('code_tables', step_code_tables), ('hits', step_hits),
     ('audio', step_audio), ('faces', step_faces), ('items', step_items),
     ('fighters', step_gap('fighters')), ('stages', step_gap('stages')), ('measured', step_gap('measured')),
     ('hd', step_gap('hd')),
@@ -199,7 +215,7 @@ def main():
             rep['steps'][name] = {'ok': False, 'error': str(e)[-2000:]}
             log(f'  FAILED: {e}')
             failed = True
-            if name == 'disc':
+            if name in ('deps', 'disc'):
                 break
     if not a.no_godot and not failed:
         godot_import(a, rep)
