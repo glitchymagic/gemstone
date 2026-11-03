@@ -1,0 +1,9 @@
+# Gemstone importer (Python 3.10-3.12). pip install -r importer/requirements.txt
+numpy>=1.24,<2
+pillow>=10
+# the 4x texture upscalers (Real-ESRGAN anime 6B, 4x-AnimeSharp; weights are downloaded by the importer)
+torch>=2.1
+torchvision>=0.16
+spandrel>=0.4
+# the Remaster look's derived maps
+scipy>=1.10
