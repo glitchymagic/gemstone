@@ -9,7 +9,7 @@ Usage:
       and patterns closest to the disc's design), tNN_m.png class weights (R skin G hair B metal A leather) and
       tNN_s.png (R gem G eyes B inner ink line A painted shade), tNN_n.png (tangent-space normal map: the painted folds,
       seams and fine detail of the texture as height, per-class strength), all derived from the disc texture
-The rip is read from $PS_RIP (default: the master checkout's rip/, read only)."""
+The rip is read from $PS_RIP (default: rip/ of this checkout, read only)."""
 import glob, os, sys, types
 try:
     import lzma  # noqa
@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 RIP = os.environ.get('PS_RIP', './rip')
-MODELS = os.environ.get('PS_UPSCALERS', os.path.expanduser('~/.cache/ps-hd'))
+MODELS = os.environ.get('PS_UPSCALERS', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bin'))
 
 
 def originals(name):

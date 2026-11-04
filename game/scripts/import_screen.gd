@@ -2,8 +2,9 @@ class_name ImportScreen
 extends Control
 ## First run: nothing from the game ships with the remaster, so this screen asks for the player's own disc dump and
 ## runs the importer (importer/psimport.py, or the bundled importer/gemstone-import.exe) on it. It shows the importer's
-## output live, then what it could and couldn't make. The game never starts on a partial import: whatever is missing
-## is listed, never replaced by a stand-in.
+## output live, then what it could and couldn't make. The game starts only once everything the disc holds is imported;
+## what the importer can't make yet (numbers measured from the original running, not files on the disc) is listed,
+## never replaced by a stand-in.
 
 const REPORT := "res://assets/IMPORT_REPORT.json"
 var _log: RichTextLabel
@@ -63,9 +64,14 @@ func _show_report(r: Dictionary) -> void:
 	var miss := []
 	for k in r.get("steps", {}):
 		var s: Dictionary = r.steps[k]
+		if k == "measured": continue
 		if not s.get("ok", false): miss.append("- %s: %s" % [k, s.get("missing", s.get("error", "failed"))])
-	if miss.is_empty():
-		_status.text = "Everything is imported. Press Play."
+	if miss.is_empty() and bool(r.get("complete", false)):
+		_status.text = ("Everything on your disc is imported. Press Play. Not in this build yet (the game plays these "
+			+ "parts by its own simpler rules until they are decoded):")
+		_log.clear()
+		var later: Dictionary = r.get("not_in_this_build", {})
+		for k in later: _log.append_text("- %s: %s\n" % [k, later[k]])
 		_play.visible = true; _play.grab_focus()
 	else:
 		_status.text = "Imported what the importer can make so far. Still missing, so the game can't start yet:"

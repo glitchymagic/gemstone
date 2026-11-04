@@ -300,8 +300,9 @@ def clip_span(mdt, kind, motion, limit=4000):
     return limit, None
 
 
-def export_form(fs, char, form, out, only=None):
-    """every motion of one form -> out/<x><form>k<k>_<mmm>.npz (q, t, loop, loop_from, rot) + index.json + skel.json"""
+def export_form(fs, char, form, out, only=None, prefix=None):
+    """every motion of one form -> out/<prefix>k<k>_<mmm>.npz (prefix default <x><form>; the game names a Power Change
+    form's clips with the normal form's prefix, e.g. f0) (q, t, loop, loop_from, rot) + index.json + skel.json"""
     os.makedirs(out, exist_ok=True)
     exe = open(os.path.join(fs, '1ST_READ.BIN'), 'rb').read()
     load_tables(exe)
@@ -313,7 +314,7 @@ def export_form(fs, char, form, out, only=None):
         F, lf = clip_span(md, k, m)
         p = play(md, k, m, F + 1, char, form)
         q, t = to_clip(p, n, skel['offset'][0], skel['const_rot'], MODEL_SCALE[char][form])
-        name = '%s%dk%d_%03d' % (LETTER[char], form, k, m)
+        name = '%sk%d_%03d' % (prefix or '%s%d' % (LETTER[char], form), k, m)
         np.savez_compressed(os.path.join(out, name + '.npz'), q=q[1:].astype(np.float32), t=t[1:].astype(np.float32),
                             loop=lf is not None, loop_from=-1 if lf is None else lf, rot=p['rot'][1:].astype(np.int32),
                             body_rot=p['body_rot'][1:].astype(np.int32))

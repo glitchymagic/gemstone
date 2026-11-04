@@ -177,7 +177,8 @@ func _ready() -> void:
 		var s := Audio.music(stage_music(stage))   # each stage its own track (was always Londo's ST_00)
 		if s: music.stream = s; music.volume_db = -6.0; music.play()
 		vo = AudioStreamPlayer.new(); vo.volume_db = 0.0; add_child(vo)
-	var fj = JSON.parse_string(FileAccess.get_file_as_string("res://assets/fidelity/flow.json"))
+	var fj = JSON.parse_string(FileAccess.get_file_as_string("res://assets/fidelity/flow.json")) \
+		if FileAccess.file_exists("res://assets/fidelity/flow.json") else null
 	if fj is Dictionary: flow_spots = (fj.get("win_spots", {}) as Dictionary).get(stage, {})
 	if OS.has_environment("PS_FLOW_LOG"): flow_log = FileAccess.open(OS.get_environment("PS_FLOW_LOG"), FileAccess.WRITE)
 	rec.begin(self)
@@ -523,7 +524,7 @@ func _place(f: Fighter, cm: Array) -> void:
 ## Frames of a fighter's round intro (k3/0 or k3/1, state 22) = its motion length + 1 (logged: Ryoma k3/0 106, Falcon
 ## k3/0 120 / k3/1 119, Wang-Tang k3/0 100)
 static func intro_frames(cid: String, mot := 0) -> int:
-	if _intro_frames.is_empty():
+	if _intro_frames.is_empty() and FileAccess.file_exists("res://assets/fidelity/clip_frames.json"):
 		var d = JSON.parse_string(FileAccess.get_file_as_string("res://assets/fidelity/clip_frames.json"))
 		if d is Dictionary:
 			for c in d:

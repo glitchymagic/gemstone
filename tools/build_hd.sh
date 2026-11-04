@@ -1,12 +1,12 @@
 #!/bin/bash
 # Rebuilds game/assets/hd (untracked, like ripped/) from the disc rip + game/assets/ripped: the Remaster look's
 # subdivided fighter meshes, 4x textures and derived maps. Every step skips what already exists (delete a file to
-# redo it). Reads the rip from $PS_RIP (default: the master checkout's rip/, read only).
+# redo it). Reads the rip from $PS_RIP (default: rip/ of this checkout). importer/psimport.py --steps hd does the same.
 # Usage: tools/build_hd.sh [fighters|stages|all] [p00 p10 ...]      (~2 min per fighter form, then a Godot --import)
 cd "$(dirname "$0")/.."
-PY=${PS_PY:-$HOME/.pyenv/versions/3.11.11/bin/python3}
+PY=${PS_PY:-python3}
 UP=${PS_UPPY:-python3}   # torch + spandrel (needs torch + spandrel: importer/requirements-hd.txt)
-G=/Applications/Godot.app/Contents/MacOS/Godot
+G=${GODOT:-godot}
 what=${1:-all}; shift
 forms=("$@")
 [ ${#forms[@]} -eq 0 ] && forms=(p00 p01 p10 p11 p20 p21 p30 p31 p40 p41 p50 p51 p60 p61 p70 p71 p80 p81 p90 p91 pa0)

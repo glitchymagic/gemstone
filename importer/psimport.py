@@ -9,7 +9,7 @@ Everything goes under the checkout: rip/fs (the disc's files), game/assets/{ripp
 is ever committed (.gitignore). game/assets/IMPORT_REPORT.json says what was made and what could not be: the game reads
 it and tells you, it never fills a gap with a substitute.
 """
-import argparse, hashlib, json, os, shutil, subprocess, sys, time
+import argparse, hashlib, json, os, re, shutil, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -161,29 +161,79 @@ def step_items(a, rep):
     return {}
 
 
-GAPS = {
-    'fighters': 'the fighters\' skeletons and every motion were recorded from the game running in an emulator; '
-                'reading them straight off the disc (Pn0_MOT.MDT) is not finished yet',
-    'stages': 'where each stage prop stands was read from emulator RAM; the static tables in 1ST_READ are found but '
-              'not decoded yet',
-    'measured': 'stage walk areas, camera presets, sound cues, Power Change timelines and other numbers measured from '
-                'the original running in an emulator: each needs a decoder from the disc files first',
-    'hd': 'the Remaster look is built from the imported fighters and stages (needs those first)',
+def step_fighters(a, rep):
+    """all 21 fighter forms: rig + textures (4x upscale) + every motion, decoded from Pn0_MOT.MDT and 1ST_READ"""
+    out = tool('fighters_import.py')
+    forms = [json.loads(l) for l in out.splitlines() if l.startswith('{')]
+    return {'forms': len(forms), 'clips': sum(f['clips'] for f in forms),
+            'not_on_disc': 'braids / ribbons / charms (the game simulates them; they keep their rest pose), '
+                           'parts that leave their bone mid-move (thrown props, Ryoma\'s sword in some moves)'}
+
+
+STAGES = ['STG00', 'STG10', 'STG20', 'STG30', 'STG40', 'STG50', 'STG60', 'STG70', 'STG80', 'STG90', 'STGA0']
+
+
+def step_stages(a, rep):
+    """11 stages: world + every prop (4x textures), prop placement from 1ST_READ (tools/stage_layout_disc.py)"""
+    made = {}
+    for stg in STAGES:
+        tex, up = os.path.join(ROOT, 'rip', 'tex', stg), os.path.join(ROOT, 'rip', 'up', stg)
+        if not os.path.isdir(tex) or not os.listdir(tex):
+            tool('hd_tex.py', 'decode', stg, tex)
+        tool('upscale.py', tex, up)
+        tool('export_stage.py', stg, 'disc')
+        made[stg.lower()] = len(json.load(open(os.path.join(ASSETS, 'ripped', stg.lower() + '_layout.json'))))
+    return {'placed_objects': made, 'not_on_disc_yet': 'spawn points, camera angles (see step measured)'}
+
+
+def step_hd(a, rep):
+    """the Remaster look's fighters: 4x textures + derived maps (tools/hd_tex.py fighter) and subdivided meshes
+    (tools/hd_mesh.py), ~2 min per form"""
+    hd = os.path.join(ASSETS, 'hd')
+    done = []
+    for f in sorted(x[:-4] for x in os.listdir(os.path.join(ASSETS, 'ripped')) if re.fullmatch(r'p[0-9a]\d\.glb', x)):
+        tex = os.path.join(hd, 'tex', f)
+        tool('hd_tex.py', 'fighter', f.upper(), tex)
+        out = os.path.join(hd, f + '.glb')
+        if not os.path.exists(out):
+            tool('hd_mesh.py', os.path.join(ASSETS, 'ripped', f + '.glb'), out, '--seg', '4', '--tex', tex,
+                 '--clips', os.path.join(ASSETS, 'ripped', f + '_clips.json'))
+        done.append(f)
+    return {'forms': len(done)}
+
+
+# Numbers measured from the original running in an emulator (its RAM, sound chip and camera logged frame by frame).
+# They are not files on the disc, so the importer cannot make them yet; each needs a decoder of the game code that
+# produces them. Without one the game runs that part on its own simpler rules and says so (IMPORT_REPORT.json).
+MEASURED = {
+    'stgNN_area.json (11)': 'the exact walkable area of each stage (where the original stops you, ledges, holes)',
+    'stgNN_cam.json (11)': 'camera angles per stage area',
+    'spawns.json': 'round start points per stage',
+    'flow.json': 'where the winner / loser stand after a round',
+    'pc_moves.json, pc_code.json': 'Power Change: transform / revert timelines and the Power Drive / Fusion moves',
+    'pc_shots.json, pc_shot_look.json, pc_spin.json, fv_shots.json, fv_attacks.json': 'Drive / Fusion shots and '
+        'Final Valgas\'s beams',
+    'chains.json, motions.json, reactions.json, react_code.json': 'which motion each press starts, per-motion travel, '
+        'hit reactions (knockback, launches)',
+    'throws.json, hitgrabs.json': 'grab-throws and hit-grabs',
+    'obj_code.json, item_code.json, mv_stage.json, breakables.json': 'object / pole / item / breakable rules',
+    'body_scale.json, hip_pin.json, bone_boxes.json, fighter_radius.json, ground_samples.json': 'body sizes, '
+        'attack reach, floor heights',
+    'sfx_map.json': 'which sound each motion frame and hit plays',
+    'cpu_stats.json': 'the original CPU\'s measured behaviour (test reference only)',
 }
 
 
-def step_gap(name):
-    def f(a, rep):
-        raise NotImplementedError(GAPS[name])
-    return f
+def step_measured(a, rep):
+    raise NotImplementedError('not on the disc as files: ' + '; '.join(f'{k}: {v}' for k, v in MEASURED.items()))
 
 
 STEPS = [
     ('deps', step_deps), ('disc', step_disc), ('models', step_models), ('tables', step_tables),
     ('code_tables', step_code_tables), ('hits', step_hits), ('ladder', step_ladder), ('audio', step_audio),
     ('faces', step_faces), ('items', step_items),
-    ('fighters', step_gap('fighters')), ('stages', step_gap('stages')), ('measured', step_gap('measured')),
-    ('hd', step_gap('hd')),
+    ('fighters', step_fighters), ('stages', step_stages), ('measured', step_measured),
+    ('hd', step_hd),
 ]
 
 
@@ -230,7 +280,10 @@ def main():
         godot_import(a, rep)
     rep['when'] = time.strftime('%Y-%m-%d %H:%M:%S')
     rep['secs'] = round(time.time() - t0, 1)
-    rep['complete'] = all(v.get('ok') for v in rep['steps'].values()) and len(rep['steps']) == len(STEPS)
+    disc_steps = [n for n, _ in STEPS if n != 'measured']
+    # complete = everything the disc holds is imported; 'measured' (not on the disc as files yet) is listed, not needed
+    rep['complete'] = all(rep['steps'].get(n, {}).get('ok') for n in disc_steps)
+    rep['not_in_this_build'] = MEASURED
     os.makedirs(ASSETS, exist_ok=True)
     json.dump(rep, open(REPORT, 'w'), indent=1)
     log('report ->', os.path.relpath(REPORT, ROOT), '| complete' if rep['complete'] else '| incomplete (see report)')
