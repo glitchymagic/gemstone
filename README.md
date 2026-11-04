@@ -33,12 +33,21 @@ What's still wrong or missing:
   stretches, mostly on Kraken's ship (its upper deck) and against Final Valgas. Many CPU-vs-CPU rounds go to TIME.
 - 31 logged bugs are open (launch start points, a few hit-reaction classes, Jack's air Drives, shot colours, Final
   Valgas's own moves). They're listed in [docs/BUGS.md](docs/BUGS.md).
-- **This public repo can't build a playable game yet.** The importer already makes the disc's files, music, announcer,
-  sound banks, hit data, the original AI program, items and HUD portraits from your dump. Not yet: the fighters'
-  skeletons and animations, stage prop layouts, and the numbers that were *measured* from the original running in an
-  emulator (stage walk areas, camera presets, sound cues, Power Change timelines). Those are being rewritten to read
-  straight from the disc files. `python3 importer/psimport.py --report` lists exactly what's still missing, and the
-  game says so instead of ever using a stand-in.
+- **A game built from this repo is not the full game yet.** The importer builds everything that is *on the disc* from
+  your dump: all 21 fighter forms with every motion (decoded straight from the disc's motion files; checked against
+  emulator recordings, the same on every frame for 95-99 % of each fighter's clips, the rest differ only in where a
+  clip is cut), all 11 stages with every prop placed from the program file's own tables, music, announcer, sound
+  banks, hit data, the original AI program, the arcade ladder, items, portraits and the Remaster look's HD build.
+  What it can't make yet are the numbers that were *measured* from the original running in an emulator, because they
+  aren't files on the disc: Power Change timelines and the Drive / Fusion shots, stage walk areas and camera presets,
+  spawn points, sound cues, hit-reaction and object tables. Without them the game plays those parts by its own simpler
+  rules (no Power Change yet, simpler stage limits, a default camera) and the import screen lists
+  them before you press Play.
+  Turning each into a disc decoder is the main open work. Measured today: a checkout built only from the disc passes
+  146 of the 163 checks it runs in both looks (the developer's build with the measured data: 165/165), and every
+  failure is one of those parts (13 Power Change checks, the stage walk area, gems falling off the stage).
+- Braids, ribbons and charms (Wang-Tang, Rouge, Ayame) hold their rest pose: the original simulates them every frame
+  and that code isn't ported yet.
 
 ## Dump your disc
 
@@ -57,9 +66,14 @@ python3 importer/psimport.py "/path/to/Power Stone (USA).gdi" --godot /path/to/g
 godot --path game            # or open game/project.godot in the Godot editor and press Play
 ```
 
-First run: about a minute for the disc, music, sound and tables, plus a one-time download of the two texture upscaler
-networks (Real-ESRGAN anime 6B, 4x-AnimeSharp; ~85 MB, checked by hash). The Remaster look's HD build adds a few
-minutes per fighter once the fighters import.
+First run on an M4 Mac: about 1 1/2 hours, nearly all of it the texture upscaling and the Remaster look's HD build
+(fighters ~5 min, stages ~10 min, HD ~75 min, Godot's own import ~10 min), plus a one-time download of the two texture
+upscaler networks (Real-ESRGAN anime 6B, 4x-AnimeSharp; ~85 MB, checked by hash). Without a GPU (the Windows bundle
+runs the upscalers on the CPU) expect several hours. It only happens once; every step skips what it already made.
+
+**Windows:** download `gemstone-win64.zip` from the Releases page, unzip, run `Gemstone.bat` and point the import
+screen at your dump. It bundles Godot, Python and the importer's libraries, ffmpeg and vgmstream (`THIRD_PARTY.txt`);
+`IMPORT_CLI.bat "path\to\Power Stone (USA).gdi"` runs the importer by hand.
 
 What it writes (never committed, all in `.gitignore`): `rip/fs/` (your disc's files), `game/assets/ripped|audio|
 fidelity|disc|hd/`, and `game/assets/IMPORT_REPORT.json`.
@@ -79,7 +93,8 @@ fidelity|disc|hd/`, and `game/assets/IMPORT_REPORT.json`.
 ## Contributing
 
 Issues and pull requests are welcome: bugs you see against the original, a fighter move that feels off, or help with the
-open decoding work (motions from `Pn0_MOT.MDT`, stage layouts from the program file). Two rules: nothing from the game
+open decoding work (the measured tables above: each needs the game code that produces it read and ported, then
+checked against the original). Two rules: nothing from the game
 goes in the repo (the audit enforces it), and no look-alike or stand-in art: anything new must be derived from the
 disc's own data.
 
