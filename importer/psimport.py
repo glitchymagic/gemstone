@@ -145,10 +145,11 @@ def step_audio(a, rep):
         if not shutil.which(exe):
             raise RuntimeError(f'audio needs {exe} on PATH')
     out = os.path.join(ASSETS, 'audio')
-    run(['bash', os.path.join(ROOT, 'tools', 'adx_to_mp3.sh'), FS, out])
+    tool('adx_to_mp3.py', FS, out)
     tool('sfx_extract.py')
     n = len([f for f in os.listdir(out) if f.endswith('.mp3')])
-    return {'music': n, 'se': len(os.listdir(os.path.join(out, 'se'))) if os.path.isdir(os.path.join(out, 'se')) else 0}
+    se = os.path.join(out, 'se')
+    return {'music': n, 'se': len([f for f in os.listdir(se) if f.endswith('.wav')]) if os.path.isdir(se) else 0}
 
 
 def step_faces(a, rep):
