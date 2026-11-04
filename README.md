@@ -73,7 +73,9 @@ runs the upscalers on the CPU) expect several hours. It only happens once; every
 
 **Windows:** download `gemstone-win64.zip` from the Releases page, unzip, run `Gemstone.bat` and point the import
 screen at your dump. It bundles Godot, Python and the importer's libraries, ffmpeg and vgmstream (`THIRD_PARTY.txt`);
-`IMPORT_CLI.bat "path\to\Power Stone (USA).gdi"` runs the importer by hand.
+`IMPORT_CLI.bat "path\to\Power Stone (USA).gdi"` runs the importer by hand. Needs the Microsoft Visual C++
+Redistributable (x64), which most PCs already have (`Gemstone.bat` checks and links it). A `.chd` dump needs MAME's
+`chdman.exe` next to `importer/` (or convert it to .gdi first); .gdi and .cdi work as they are.
 
 What it writes (never committed, all in `.gitignore`): `rip/fs/` (your disc's files), `game/assets/ripped|audio|
 fidelity|disc|hd/`, and `game/assets/IMPORT_REPORT.json`.

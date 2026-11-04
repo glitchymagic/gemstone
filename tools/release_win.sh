@@ -24,6 +24,7 @@ echo 'Lib/site-packages' >> "$B"/python/python311._pth
 $PY -m pip install --quiet --target "$B/python/Lib/site-packages" --platform win_amd64 --python-version 3.11 \
     --only-binary=:all: --extra-index-url https://download.pytorch.org/whl/cpu -r importer/requirements.txt
 
+# (torch also needs the Microsoft VC++ runtime, msvcp140.dll: Gemstone.bat checks for it and links the installer)
 # 3. ffmpeg + vgmstream-cli (music / announcer decode)
 get "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl.zip" ffmpeg.zip
 unzip -qo -j "$DL/ffmpeg.zip" '*/bin/ffmpeg.exe' -d "$B/bin"
@@ -38,6 +39,18 @@ rem Gemstone: first run shows the import screen (point it at your own Power Ston
 set "HERE=%~dp0"
 set "PATH=%HERE%bin;%HERE%python;%PATH%"
 set "PS_PYTHON=%HERE%python\python.exe"
+if not exist "%SystemRoot%\System32\msvcp140.dll" (
+  echo The importer needs the Microsoft Visual C++ Redistributable ^(x64^):
+  echo https://aka.ms/vs/17/release/vc_redist.x64.exe
+  echo Install it, then run Gemstone.bat again.
+  pause
+  exit /b 1
+)
+rem first start: Godot indexes the game's own scripts once (nothing from the disc yet) so the import screen can open
+if not exist "%HERE%game\.godot" (
+  echo First start: preparing the game files, one moment...
+  "%HERE%godot\Godot_v4.7.2-stable_win64_console.exe" --headless --path "%HERE%game" --import
+)
 start "" "%HERE%godot\Godot_v4.7.2-stable_win64.exe" --path "%HERE%game"
 BAT
 cat > "$B/IMPORT_CLI.bat" <<'BAT'

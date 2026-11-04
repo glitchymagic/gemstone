@@ -32,7 +32,7 @@ def parse_gdi(path):
             tracks.append(dict(no=int(m[1]), lba=int(m[2]), type=int(m[3]), ssize=int(m[4]), file=m[6] or m[7]))
     data = [t for t in tracks if t['type'] == 4 and t['lba'] >= 45000]
     if not data:
-        raise SystemExit('disc: no high-density data track in ' + path)
+        raise RuntimeError('disc: no high-density data track in ' + path)
     t = data[0]
     doff = 16 if t['ssize'] == 2352 else 0
     return Track(os.path.join(os.path.dirname(path), t['file']), t['lba'], t['ssize'], doff)
@@ -63,7 +63,7 @@ def scan_image(path):
                         base = p - doff - 16 * ssize
                         return Track(path, start, ssize, doff, base)
         pos += CH
-    raise SystemExit('disc: no ISO9660 file system found in ' + path)
+    raise RuntimeError('disc: no ISO9660 file system found in ' + path)
 
 
 def from_chd(path, tmp):
@@ -72,7 +72,7 @@ def from_chd(path, tmp):
     if not exe and os.path.exists(here):
         exe = here
     if not exe:
-        raise SystemExit('disc: .chd needs chdman (MAME tools). Install it, or convert to .gdi first: '
+        raise RuntimeError('disc: .chd needs chdman (MAME tools). Install it, or convert to .gdi first: '
                          'chdman extractcd -i game.chd -o game.gdi')
     gdi = os.path.join(tmp, 'disc.gdi')
     subprocess.run([exe, 'extractcd', '-i', path, '-o', gdi], check=True)
@@ -91,7 +91,7 @@ def extract(image, out):
         t = scan_image(image)
     pvd = t.read(t.start + 16, 2048)
     if pvd[1:6] != b'CD001':
-        raise SystemExit('disc: the data track has no ISO9660 volume descriptor')
+        raise RuntimeError('disc: the data track has no ISO9660 volume descriptor')
     os.makedirs(out, exist_ok=True)
     files = []
 

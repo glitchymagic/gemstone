@@ -36,6 +36,19 @@ def tool(name, *args):
     return run([PY, os.path.join(ROOT, 'tools', name)] + list(args))
 
 
+def tool_live(name, *args):
+    """a long tool: its output lines are shown as they come (the import screen shows them), returns all of it"""
+    args = [PY, '-u', os.path.join(ROOT, 'tools', name)] + list(args)
+    log('$', ' '.join(os.path.relpath(a, ROOT) if a.startswith(ROOT) else a for a in args))
+    p = subprocess.Popen(args, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    out = []
+    for line in p.stdout:
+        out.append(line); print('  ' + line.rstrip()[:200], flush=True)
+    if p.wait() != 0:
+        raise RuntimeError(''.join(out)[-3000:].strip())
+    return ''.join(out)
+
+
 def sha256(p):
     h = hashlib.sha256()
     with open(p, 'rb') as f:
@@ -54,6 +67,11 @@ def step_deps(a, rep):
         if subprocess.run([PY, '-c', shim + f'import {mod}'], capture_output=True).returncode != 0:
             miss.append(mod)
     tools = [t for t in ('vgmstream-cli', 'ffmpeg') if not shutil.which(t)]
+    if miss and os.path.exists(os.path.join(os.path.dirname(sys.executable), 'python311._pth')):
+        # the Windows bundle's own Python: its libraries are all there, so a failed import is the system runtime torch
+        # needs (msvcp140.dll), not a missing package
+        raise RuntimeError('missing: ' + ', '.join(miss) + '. Install the Microsoft Visual C++ Redistributable (x64): '
+                           'https://aka.ms/vs/17/release/vc_redist.x64.exe, then import again')
     if miss or tools:
         raise RuntimeError('missing: ' + ', '.join(miss + tools) + f' (Python {sys.executable}). Run: '
                            f'"{sys.executable}" -m pip install -r importer/requirements.txt'
@@ -164,7 +182,7 @@ def step_items(a, rep):
 
 def step_fighters(a, rep):
     """all 21 fighter forms: rig + textures (4x upscale) + every motion, decoded from Pn0_MOT.MDT and 1ST_READ"""
-    out = tool('fighters_import.py')
+    out = tool_live('fighters_import.py')
     forms = [json.loads(l) for l in out.splitlines() if l.startswith('{')]
     return {'forms': len(forms), 'clips': sum(f['clips'] for f in forms),
             'not_on_disc': 'braids / ribbons / charms (the game simulates them; they keep their rest pose), '
@@ -278,12 +296,19 @@ def main():
             if name in ('deps', 'disc'):
                 break
     if not a.no_godot and not failed:
-        godot_import(a, rep)
+        try:
+            godot_import(a, rep)
+            rep['godot_import'] = {'ok': True}
+        except Exception as e:  # noqa: BLE001 - a failed Godot import still gets a report
+            rep['godot_import'] = {'ok': False, 'error': str(e)[-2000:]}
+            log(f'  Godot import FAILED: {e}')
+            failed = True
     rep['when'] = time.strftime('%Y-%m-%d %H:%M:%S')
     rep['secs'] = round(time.time() - t0, 1)
     disc_steps = [n for n, _ in STEPS if n != 'measured']
     # complete = everything the disc holds is imported; 'measured' (not on the disc as files yet) is listed, not needed
-    rep['complete'] = all(rep['steps'].get(n, {}).get('ok') for n in disc_steps)
+    rep['complete'] = all(rep['steps'].get(n, {}).get('ok') for n in disc_steps) and \
+        rep.get('godot_import', {}).get('ok', True)
     rep['not_in_this_build'] = MEASURED
     os.makedirs(ASSETS, exist_ok=True)
     json.dump(rep, open(REPORT, 'w'), indent=1)

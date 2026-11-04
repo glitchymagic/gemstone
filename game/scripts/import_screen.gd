@@ -96,7 +96,7 @@ func _run(path: String) -> void:
 		return
 	var args: Array = imp[1] + [path, "--godot", OS.get_executable_path()]
 	_pick.disabled = true
-	_status.text = "Importing from your disc... (about a minute, plus a one-time download of the texture upscalers)"
+	_status.text = "Importing from your disc... First run: about 1 1/2 hours on a recent Mac, several hours on a PC without a GPU (the HD textures). Only once."
 	_log.clear()
 	var p := OS.execute_with_pipe(imp[0], PackedStringArray(args))
 	if p.is_empty():

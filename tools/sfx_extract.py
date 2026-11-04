@@ -10,7 +10,7 @@ key COMMON #28 (4-bit ADPCM, 22,050 Hz) on 18 of 27 hits plus the announcer's "O
 impacts are 8-bit PCM samples the bank's sample table doesn't list (COMMON +0xC36E, +0x10588; 16,010 Hz, ~1 s).
 Which of the game's impact samples each attack uses (its attack record) is not decoded: flinch hits use +0xC36E.
   sfx_extract.py"""
-import os, sys, tempfile
+import os, shutil, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
 import dtpk
 
@@ -29,7 +29,7 @@ def main():
         dtpk.extract(R + f'rip/fs/{bank}.BIN', tmp + '/' + bank)
         for i, name in picks.items():
             src = f'{tmp}/{bank}/{bank.lower()}_{i:03d}.wav'
-            os.replace(src, OUT + name + '.wav')
+            shutil.move(src, OUT + name + '.wav')   # %TEMP% may be another drive (os.replace can't)
             print(bank, i, '->', name)
     import wave
     for name, (bank, ofs, n, hz) in RAW8.items():   # signed 8-bit PCM -> 16-bit WAV at the rate the game plays it

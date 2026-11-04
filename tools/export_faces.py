@@ -2,7 +2,7 @@
 """The original in-fight HUD portraits + name banners: FACE00..FACE10.BIN (MODEL.BIN-style compression over
 twiddled ARGB4444, stored upside-down; 128x128, FACE00 256x128). Writes game/assets/ripped/ui/faceNN.png (+ 4x
 upscaled faceNN_4x.png via tools/upscale.py). NN = fighter index (00 Falcon ... 09 Valgas, 10 Final Valgas)."""
-import os, subprocess, sys, tempfile
+import os, shutil, subprocess, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pstex
 from PIL import Image
@@ -18,4 +18,4 @@ for i in range(11):
     print(i, w, h)
 subprocess.run([sys.executable, R + 'tools/upscale.py', tmp, tmp + 'up'], check=True, capture_output=True)
 for i in range(11):
-    os.replace(tmp + f'up/t{i:02d}.png', out + f'face{i:02d}_4x.png')
+    shutil.move(tmp + f'up/t{i:02d}.png', out + f'face{i:02d}_4x.png')   # %TEMP% may be another drive
