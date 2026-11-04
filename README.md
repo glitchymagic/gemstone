@@ -35,8 +35,8 @@ What's still wrong or missing:
   Valgas's own moves). They're listed in [docs/BUGS.md](docs/BUGS.md).
 - **A game built from this repo is not the full game yet.** The importer builds everything that is *on the disc* from
   your dump: all 21 fighter forms with every motion (decoded straight from the disc's motion files; checked against
-  emulator recordings, the same on every frame for 95-99 % of each fighter's clips, the rest differ only in where a
-  clip is cut), all 11 stages with every prop placed from the program file's own tables, music, announcer, sound
+  emulator recordings, the same on every frame for 97-99 % of most fighters' clips and over 90 % for every one; the
+  rest differ only in where a clip is cut), all 11 stages with every prop placed from the program file's own tables, music, announcer, sound
   banks, hit data, the original AI program, the arcade ladder, items, portraits and the Remaster look's HD build.
   What it can't make yet are the numbers that were *measured* from the original running in an emulator, because they
   aren't files on the disc: Power Change timelines and the Drive / Fusion shots, stage walk areas and camera presets,
