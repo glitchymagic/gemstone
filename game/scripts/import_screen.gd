@@ -66,6 +66,8 @@ func _show_report(r: Dictionary) -> void:
 		var s: Dictionary = r.steps[k]
 		if k == "measured": continue
 		if not s.get("ok", false): miss.append("- %s: %s" % [k, s.get("missing", s.get("error", "failed"))])
+	var gi: Dictionary = r.get("godot_import", {})
+	if not gi.get("ok", true): miss.append("- godot import: %s" % gi.get("error", "failed"))
 	if miss.is_empty() and bool(r.get("complete", false)):
 		_status.text = ("Everything on your disc is imported. Press Play. Not in this build yet (the game plays these "
 			+ "parts by its own simpler rules until they are decoded):")

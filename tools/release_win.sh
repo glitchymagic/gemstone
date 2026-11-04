@@ -47,7 +47,7 @@ if not exist "%SystemRoot%\System32\msvcp140.dll" (
   exit /b 1
 )
 rem first start: Godot indexes the game's own scripts once (nothing from the disc yet) so the import screen can open
-if not exist "%HERE%game\.godot" (
+if not exist "%HERE%game\.godot\global_script_class_cache.cfg" (
   echo First start: preparing the game files, one moment...
   "%HERE%godot\Godot_v4.7.2-stable_win64_console.exe" --headless --path "%HERE%game" --import
 )
